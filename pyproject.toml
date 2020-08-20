@@ -1,0 +1,26 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "ims_client"
+author = "James Vogel"
+author-email = "jim.m.vogel@gmail.com"
+classifiers = ["License :: OSI Approved :: MIT License"]
+requires = [
+    "loguru",
+    "tenacity"
+]
+requires-python=">=3.5"
+description-file="README.md"
+
+[tool.flit.metadata.requires-extra]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+dev = [
+    "pytest-watch",
+    "tomlkit",
+    "black",
+]
