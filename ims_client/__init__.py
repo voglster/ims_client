@@ -2,6 +2,8 @@
 
 __version__ = "0.1.1"
 from datetime import datetime
+from functools import lru_cache
+
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
 from dateutil.parser import parse
@@ -48,3 +50,8 @@ class InventoryManagementServer:
         }
         r = requests.post(f"{self.base_url}/tank/tanks", params=params)
         return r.json()
+
+
+@lru_cache
+def get_ims_server(base_url=None, system_psk=None):
+    return InventoryManagementServer(base_url, system_psk)
