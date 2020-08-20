@@ -1,6 +1,6 @@
 """Simple python client for the capspire IMS Server"""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 from datetime import datetime
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
