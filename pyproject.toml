@@ -9,7 +9,8 @@ author-email = "jim.m.vogel@gmail.com"
 classifiers = ["License :: OSI Approved :: MIT License"]
 requires = [
     "loguru",
-    "tenacity"
+    "tenacity",
+    "pydantic"
 ]
 requires-python=">=3.5"
 description-file="README.md"

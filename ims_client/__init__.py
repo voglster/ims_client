@@ -3,6 +3,7 @@
 __version__ = "0.1.2"
 from datetime import datetime
 from functools import lru_cache
+from typing import List, Union
 
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -10,6 +11,22 @@ from dateutil.parser import parse
 import requests
 
 from os import getenv
+
+from pydantic import BaseModel
+
+
+class Tank(BaseModel):
+    id: str
+    monitor_type: str
+    payload: dict
+    product: str
+    sample_rate: int
+    status: str
+    store_number: str
+    tank_id: str
+    temperature: float
+    updated: datetime
+    volume: float
 
 
 class InventoryManagementServer:
@@ -42,14 +59,16 @@ class InventoryManagementServer:
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
-    def tanks(self, store="", tank=""):
+    def tanks(self, store="", tank="", as_model=False) -> Union[List[dict], List[Tank]]:
         params = {
             **self.params,
             "store_number": store,
             "tank_id": str(tank),
         }
         r = requests.post(f"{self.base_url}/tank/tanks", params=params)
-        return r.json()
+        if not as_model:
+            return r.json()
+        return [Tank(**row) for row in r.json()]
 
 
 @lru_cache
