@@ -27,7 +27,6 @@ class Tank(BaseModel):
     updated: datetime
     volume: float
 
-class Reading(BaseModel):
 
 class InventoryManagementServer:
     def __init__(self, base_url=None, system_psk=None):
