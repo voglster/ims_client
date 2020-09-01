@@ -1,6 +1,6 @@
 """Simple python client for the capspire IMS Server"""
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 from datetime import datetime
 from functools import lru_cache
 from os import getenv
