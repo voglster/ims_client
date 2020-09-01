@@ -34,7 +34,7 @@ class InventoryManagementServer:
         self.system_psk = system_psk or getenv("SYSTEM_PSK")
 
     @property
-    def params(self):
+    def params(self) -> dict:
         return {"system_psk": self.system_psk}
 
     @logger.catch(reraise=True)
