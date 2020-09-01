@@ -3,16 +3,15 @@
 __version__ = "0.1.3"
 from datetime import datetime
 from functools import lru_cache
-from typing import List, Union
-
-from loguru import logger
-from tenacity import retry, stop_after_attempt, wait_fixed
-from dateutil.parser import parse
-import requests
-
 from os import getenv
+from typing import Iterable, List, Union
 
+import pytz
+import requests
+from dateutil.parser import parse
+from loguru import logger
 from pydantic import BaseModel
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 class Tank(BaseModel):
@@ -28,6 +27,7 @@ class Tank(BaseModel):
     updated: datetime
     volume: float
 
+class Reading(BaseModel):
 
 class InventoryManagementServer:
     def __init__(self, base_url=None, system_psk=None):
@@ -56,6 +56,17 @@ class InventoryManagementServer:
             row["read_time"] = parse(row["read_time"])
             row["run_time"] = parse(row["run_time"])
         return data
+
+    @logger.catch(reraise=True)
+    def localize(
+        self, zone: str, store, tank, start: datetime, end: datetime = None,
+    ) -> Iterable[dict]:
+        tz = pytz.timezone(zone)
+        data = self.readings(store, tank, start, end)
+        for r in data:
+            r["read_time"] = tz.fromutc(r["read_time"]).replace(tzinfo=None)
+            r["run_time"] = tz.fromutc(r["run_time"]).replace(tzinfo=None)
+            yield r
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
