@@ -139,5 +139,5 @@ class InventoryManagementServer:
 
 
 @lru_cache(maxsize=2)
-def get_ims_server(base_url=None, system_psk=None):
-    return InventoryManagementServer(base_url, system_psk)
+def get_ims_server(base_url=None, system_psk=None, timeout=10):
+    return InventoryManagementServer(base_url, system_psk, timeout)
