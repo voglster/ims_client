@@ -4,10 +4,10 @@ __version__ = "0.1.6"
 from datetime import datetime
 from functools import lru_cache
 from os import getenv
-from typing import Iterable, List, Union
+from typing import Generator, Iterable, List, Union
 
+import httpx
 import pytz
-import requests
 from dateutil.parser import parse
 from loguru import logger
 from pydantic import BaseModel
@@ -26,6 +26,15 @@ class Tank(BaseModel):
     temperature: float
     updated: datetime
     volume: float
+
+
+class Reading(BaseModel):
+    read_time: datetime
+    run_time: datetime
+    store_number: str
+    tank_id: str
+    volume: float
+    temperature: float
 
 
 class InventoryManagementServer:
@@ -49,7 +58,7 @@ class InventoryManagementServer:
 
         if end:
             params["end_data"] = end.isoformat()
-        r = requests.post(f"{self.base_url}/tank_inventory/readings", params=params)
+        r = httpx.post(f"{self.base_url}/tank_inventory/readings", params=params)
         data = r.json() if r.status_code == 200 else []
         for row in data:
             row["read_time"] = parse(row["read_time"])
@@ -75,9 +84,46 @@ class InventoryManagementServer:
             "store_number": store,
             "tank_id": str(tank),
         }
-        r = requests.post(f"{self.base_url}/tank/tanks", params=params)
+        r = httpx.post(f"{self.base_url}/tank/tanks", params=params)
         if not as_model:
             return r.json()
+        return [Tank(**row) for row in r.json()]
+
+    @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    async def async_readings(
+        self, store: str, tank: str, start: datetime, end: datetime = None
+    ) -> List[Reading]:
+        params = {
+            **self.params,
+            "store_number": store,
+            "tank_id": str(tank),
+            "start_date": start.isoformat(),
+        }
+
+        if end:
+            params["end_data"] = end.isoformat()
+        async with httpx.AsyncClient() as client:
+            logger.debug(f"posting to {self.base_url}")
+            r = await client.post(
+                f"{self.base_url}/tank_inventory/readings", params=params
+            )
+        data = r.json() if r.status_code == 200 else []
+        return [Reading(**row) for row in data]
+
+    @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    async def async_tanks(self, store="", tank="") -> List[Tank]:
+        params = {
+            **self.params,
+            "store_number": store,
+            "tank_id": str(tank),
+        }
+        async with httpx.AsyncClient() as client:
+            r = await client.post(f"{self.base_url}/tank/tanks", params=params)
+        if r.status_code != 200:
+            logger.warning(f"unable to get any tanks {r.text}")
+            return []
         return [Tank(**row) for row in r.json()]
 
 
