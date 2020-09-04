@@ -127,6 +127,6 @@ class InventoryManagementServer:
         return [Tank(**row) for row in r.json()]
 
 
-@lru_cache
+@lru_cache(maxsize=2)
 def get_ims_server(base_url=None, system_psk=None):
     return InventoryManagementServer(base_url, system_psk)
