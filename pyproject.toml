@@ -10,7 +10,8 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 requires = [
     "loguru",
     "tenacity",
-    "pydantic"
+    "pydantic",
+    "httpx"
 ]
 requires-python=">=3.5"
 description-file="README.md"
