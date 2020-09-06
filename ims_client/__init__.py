@@ -75,7 +75,7 @@ class InventoryManagementServer:
         self, zone: str, store, tank, start: datetime, end: datetime = None,
     ) -> Iterable[dict]:
         tz = pytz.timezone(zone)
-        data = self.readings(store, tank, start, end, timeout=self.timeout,)
+        data = self.readings(store, tank, start, end)
         for r in data:
             r["read_time"] = tz.fromutc(r["read_time"]).replace(tzinfo=None)
             r["run_time"] = tz.fromutc(r["run_time"]).replace(tzinfo=None)
@@ -130,7 +130,7 @@ class InventoryManagementServer:
         }
         async with httpx.AsyncClient() as client:
             r = await client.post(
-                f"{self.base_url}/tank/tanks", params=params, timeout=self.timeout,
+                f"{self.base_url}/tank/tanks", params=params, timeout=self.timeout
             )
         if r.status_code != 200:
             logger.warning(f"unable to get any tanks {r.text}")
