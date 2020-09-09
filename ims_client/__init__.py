@@ -137,6 +137,57 @@ class InventoryManagementServer:
             return []
         return [Tank(**row) for row in r.json()]
 
+    @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    async def archive(self, limit: int = 500, days_back: int = 30) -> bool:
+        params = {
+            **self.params,
+            "limit": limit,
+            "days_back": days_back,
+        }
+        async with httpx.AsyncClient() as client:
+            r = await client.post(
+                f"{self.base_url}/archive/archive_dangerous",
+                params=params,
+                timeout=self.timeout,
+            )
+        if r.status_code != 200:
+            logger.warning(
+                f"something went wrong in the archive process: r.status_code {r.status_code} r.text {r.text}"
+            )
+            return False
+        return r.json()
+
+    @logger.catch(reraise=True)
+    async def archive_all(
+        self,
+        limit: int = 500,
+        days_back: int = 30,
+        sleep_sec: int = 10,
+        log_info: bool = False,
+    ):
+        start = datetime.utcnow()
+        delta = start
+        count = 0
+        avg_time: List[float] = []
+        while await self.archive(limit, days_back):
+            count += 1
+            avg_time.append((datetime.utcnow() - delta).total_seconds())
+            if log_info:
+                logger.info(
+                    f"since start: {datetime.utcnow()-start}, archived {limit*count}"
+                )
+            if log_info and not (datetime.utcnow() - start) % timedelta(minutes=1):
+                logger.info(
+                    f"average per {limit} -> {sum(avg_time)/len(avg_time)} seconds"
+                )
+                avg_time = []
+            await sleep(sleep_sec)
+            delta = datetime.utcnow()
+        if log_info:
+            logger.info(f"done in {datetime.utcnow()-start}")
+        return True
+
 
 @lru_cache(maxsize=2)
 def get_ims_server(base_url=None, system_psk=None, timeout=120):
