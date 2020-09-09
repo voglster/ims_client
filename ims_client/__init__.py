@@ -1,6 +1,6 @@
 """Simple python client for the capspire IMS Server"""
 
-__version__ = "0.1.15"
+__version__ = "0.1.16"
 
 from asyncio import sleep
 from datetime import datetime, timedelta
