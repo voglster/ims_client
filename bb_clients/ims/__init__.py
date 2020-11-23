@@ -1,7 +1,3 @@
-"""Simple python client for the capspire IMS Server"""
-
-__version__ = "0.1.16"
-
 from asyncio import sleep
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -39,7 +35,7 @@ class Reading(BaseModel):
     temperature: float
 
 
-class InventoryManagementServer:
+class InventoryManagementSystem:
     def __init__(self, base_url=None, system_psk=None, timeout=10):
         self.base_url = base_url or getenv("IMS_URL")
         self.system_psk = system_psk or getenv("SYSTEM_PSK")
@@ -74,7 +70,12 @@ class InventoryManagementServer:
 
     @logger.catch(reraise=True)
     def localize(
-        self, zone: str, store, tank, start: datetime, end: datetime = None,
+        self,
+        zone: str,
+        store,
+        tank,
+        start: datetime,
+        end: datetime = None,
     ) -> Iterable[dict]:
         tz = pytz.timezone(zone)
         data = self.readings(store, tank, start, end)
@@ -92,7 +93,9 @@ class InventoryManagementServer:
             "tank_id": str(tank),
         }
         r = httpx.post(
-            f"{self.base_url}/tank/tanks", params=params, timeout=self.timeout,
+            f"{self.base_url}/tank/tanks",
+            params=params,
+            timeout=self.timeout,
         )
         if not as_model:
             return r.json()
@@ -192,5 +195,5 @@ class InventoryManagementServer:
 
 
 @lru_cache(maxsize=2)
-def get_ims_server(base_url=None, system_psk=None, timeout=120):
-    return InventoryManagementServer(base_url, system_psk, timeout)
+def get_ims_service(base_url=None, system_psk=None, timeout=120):
+    return InventoryManagementSystem(base_url, system_psk, timeout)

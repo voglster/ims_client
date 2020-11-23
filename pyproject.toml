@@ -3,13 +3,15 @@ requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
-module = "ims_client"
+module = "bb_clients"
 author = "James Vogel"
 author-email = "jim.m.vogel@gmail.com"
 classifiers = ["License :: OSI Approved :: MIT License"]
 requires = [
     "loguru",
+    'python-dateutil',
     "tenacity",
+    'sparkles',
     "pydantic",
     "httpx",
     "pytz"

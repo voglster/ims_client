@@ -6,7 +6,7 @@ from pprint import pprint
 
 from dotenv import load_dotenv
 
-from ims_client import get_ims_server
+from bb_clients.ims import get_ims_service
 
 env_path = Path(".") / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -19,13 +19,13 @@ ims_url = os.getenv("IMS_URL")
 
 
 async def test_async_readings():
-    ims = get_ims_server(ims_url, system_psk)
+    ims = get_ims_service(ims_url, system_psk)
     start = datetime.utcnow() - timedelta(days=5)
     return await ims.async_readings(store, tank, start)
 
 
 async def test_async_tanks():
-    ims = get_ims_server(ims_url, system_psk)
+    ims = get_ims_service(ims_url, system_psk)
     return await ims.async_tanks()
 
 
