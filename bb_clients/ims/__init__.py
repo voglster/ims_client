@@ -47,16 +47,19 @@ class InventoryManagementSystem:
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
-    def readings(self, store, tank, start: datetime, end: datetime = None):
+    def readings(self, store, tank, start: datetime, end: datetime = None, include_manual=True, limit=None):
         params = {
             **self.params,
             "store_number": store,
             "tank_id": str(tank),
             "start_date": start.isoformat(),
+            "include_manual": include_manual,
         }
 
         if end:
             params["end_data"] = end.isoformat()
+        if limit:
+            params["limit"] = limit
         r = httpx.post(
             f"{self.base_url}/tank_inventory/readings",
             params=params,
