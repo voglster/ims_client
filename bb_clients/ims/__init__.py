@@ -47,7 +47,15 @@ class InventoryManagementSystem:
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
-    def readings(self, store, tank, start: datetime, end: datetime = None, include_manual=True, limit=None):
+    def readings(
+        self,
+        store,
+        tank,
+        start: datetime,
+        end: datetime = None,
+        include_manual=True,
+        limit=None,
+    ):
         params = {
             **self.params,
             "store_number": store,
@@ -70,6 +78,24 @@ class InventoryManagementSystem:
             row["read_time"] = parse(row["read_time"])
             row["run_time"] = parse(row["run_time"])
         return data
+
+    @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    def tank_connection_information(self, store, tank):
+        params = {
+            **self.params,
+            "store_number": store,
+            "tank_id": str(tank),
+        }
+
+        r = httpx.post(
+            f"{self.base_url}/tank/tank_connection_information",
+            params=params,
+            timeout=self.timeout,
+        )
+        if r.status_code == 200:
+            return r.json()
+        raise Exception(f"Ims error {r.status_code}", r.text)
 
     @logger.catch(reraise=True)
     def localize(
