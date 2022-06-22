@@ -35,6 +35,13 @@ class Reading(BaseModel):
     temperature: float
 
 
+class RegisterTankMonitorRequest(BaseModel):
+    store_number: str
+    host: str
+    port: int
+    monitor_type: str
+
+
 class InventoryManagementSystem:
     def __init__(self, base_url=None, system_psk=None, timeout=10):
         self.base_url = base_url or getenv("IMS_URL")
@@ -221,6 +228,22 @@ class InventoryManagementSystem:
         if log_info:
             logger.info(f"done in {datetime.utcnow()-start}")
         return True
+
+    def register_tank_monitor(self, req: RegisterTankMonitorRequest):
+        logger.info(f"Sending to {self.base_url}/tank/register/create")
+        params = {
+            **self.params,
+        }
+        data = req.dict()
+        data["ip_address"] = data.pop("host")
+
+        r = httpx.post(
+            f"{self.base_url}/tank/register/create",
+            params=params,
+            json=data,
+            timeout=self.timeout,
+        )
+        return r.json()
 
 
 @lru_cache(maxsize=2)
