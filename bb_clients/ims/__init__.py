@@ -105,6 +105,23 @@ class InventoryManagementSystem:
         raise Exception(f"Ims error {r.status_code}", r.text)
 
     @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    def store_connection_information(self, store):
+        params = {
+            **self.params,
+            "store_number": store,
+        }
+
+        r = httpx.post(
+            f"{self.base_url}/tank/store_connection_information",
+            params=params,
+            timeout=self.timeout,
+        )
+        if r.status_code == 200:
+            return r.json()
+        raise Exception(f"Ims error {r.status_code}", r.text)
+
+    @logger.catch(reraise=True)
     def localize(
         self,
         zone: str,
@@ -216,17 +233,17 @@ class InventoryManagementSystem:
             avg_time.append((datetime.utcnow() - delta).total_seconds())
             if log_info:
                 logger.info(
-                    f"since start: {datetime.utcnow()-start}, archived {limit*count}"
+                    f"since start: {datetime.utcnow() - start}, archived {limit * count}"
                 )
             if log_info and not (datetime.utcnow() - start) % timedelta(minutes=1):
                 logger.info(
-                    f"average per {limit} -> {sum(avg_time)/len(avg_time)} seconds"
+                    f"average per {limit} -> {sum(avg_time) / len(avg_time)} seconds"
                 )
                 avg_time = []
             await sleep(sleep_sec)
             delta = datetime.utcnow()
         if log_info:
-            logger.info(f"done in {datetime.utcnow()-start}")
+            logger.info(f"done in {datetime.utcnow() - start}")
         return True
 
     def register_tank_monitor(self, req: RegisterTankMonitorRequest):
