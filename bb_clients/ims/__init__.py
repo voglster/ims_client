@@ -2,7 +2,7 @@ from asyncio import sleep
 from datetime import datetime, timedelta
 from functools import lru_cache
 from os import getenv
-from typing import Iterable, List, Union
+from typing import Iterable, List, Union, Optional
 
 import httpx
 import pytz
@@ -21,7 +21,7 @@ class Tank(BaseModel):
     status: str
     store_number: str
     tank_id: str
-    temperature: float
+    temperature: Optional[float]
     updated: datetime
     volume: float
 
