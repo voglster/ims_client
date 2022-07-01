@@ -16,7 +16,7 @@ class Tank(BaseModel):
     id: str
     monitor_type: str
     payload: dict
-    product: str
+    product: Optional[str]
     sample_rate: int
     status: str
     store_number: str
