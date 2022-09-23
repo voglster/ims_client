@@ -246,6 +246,16 @@ class InventoryManagementSystem:
             logger.info(f"done in {datetime.utcnow() - start}")
         return True
 
+    @logger.catch(reraise=True)
+    def replication_data(self, min:datetime):
+        r = httpx.post(
+            f"{self.base_url}/logs/replication_data",
+            params={},
+            json={"min": min},
+            timeout=self.timeout,
+        )
+        return r.json()
+
     def register_tank_monitor(self, req: RegisterTankMonitorRequest):
         logger.info(f"Sending to {self.base_url}/tank/register/create")
         params = {
