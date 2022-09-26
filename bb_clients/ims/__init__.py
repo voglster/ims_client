@@ -247,11 +247,14 @@ class InventoryManagementSystem:
         return True
 
     @logger.catch(reraise=True)
-    def replication_data(self, min:datetime):
+    def replication_data(self, min_date: datetime):
+        params = {**self.params}
+        if min_date:
+            params["min_date"] = min_date.isoformat()
         r = httpx.post(
             f"{self.base_url}/logs/replication_data",
-            params={},
-            json={"min": min},
+            params=params,
+            json={},
             timeout=self.timeout,
         )
         return r.json()
