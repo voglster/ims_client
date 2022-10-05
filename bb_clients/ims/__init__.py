@@ -1,6 +1,7 @@
 from asyncio import sleep
 from datetime import datetime, timedelta
 from functools import lru_cache
+from json import JSONDecodeError
 from os import getenv
 from typing import Iterable, List, Union, Optional
 
@@ -9,6 +10,7 @@ import pytz
 from dateutil.parser import parse
 from loguru import logger
 from pydantic import BaseModel
+from starlette.status import HTTP_200_OK
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 
@@ -247,17 +249,33 @@ class InventoryManagementSystem:
         return True
 
     @logger.catch(reraise=True)
-    def replication_data(self, min_date: datetime):
-        params = {**self.params}
-        if min_date:
-            params["min_date"] = min_date.isoformat()
-        r = httpx.post(
-            f"{self.base_url}/logs/replication_data",
-            params=params,
-            json={},
-            timeout=self.timeout,
-        )
-        return r.json()
+    def replication_data(self, window_start: datetime = None, limit: int = 5000):
+        if not window_start:
+            window_start = datetime.utcnow() - timedelta(days=2)
+        window_end = datetime.utcnow()
+        data = []
+        count = 0
+        total = limit
+        while count < total:
+            r = httpx.post(
+                f"{self.base_url}/logs/replication_data",
+                params={},
+                json={"window_start": window_start, "window_end": window_end, "skip": count, "limit": limit},
+                timeout=self.timeout,
+            )
+            try:
+                chunk = r.json()
+                if total == limit:
+                    total = chunk.get("total", limit)
+                count += chunk.get("count", 0)
+                if chunk_data := chunk.get("data", []):
+                    data.extend(chunk_data)
+                    count += limit
+                else:
+                    break
+            except JSONDecodeError:
+                break
+        return data
 
     def register_tank_monitor(self, req: RegisterTankMonitorRequest):
         logger.info(f"Sending to {self.base_url}/tank/register/create")
