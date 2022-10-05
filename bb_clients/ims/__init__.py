@@ -260,7 +260,12 @@ class InventoryManagementSystem:
             r = httpx.post(
                 f"{self.base_url}/logs/replication_data",
                 params={},
-                json={"window_start": window_start, "window_end": window_end, "skip": count, "limit": limit},
+                json={
+                    "window_start": window_start.isoformat(),
+                    "window_end": window_end.isoformat(),
+                    "skip": count,
+                    "limit": limit
+                },
                 timeout=self.timeout,
             )
             try:
