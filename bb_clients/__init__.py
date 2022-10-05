@@ -1,5 +1,5 @@
 """Simple python clients for the Gravitate BestBuy Services"""
 
-__version__ = "0.1.27"
+__version__ = "0.1.28"
 from .fc import get_fc_service
 from .ims import get_ims_service
