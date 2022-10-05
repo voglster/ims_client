@@ -259,13 +259,14 @@ class InventoryManagementSystem:
         while count < total:
             r = httpx.post(
                 f"{self.base_url}/logs/replication_data",
-                params={},
-                json={
+                params={
+                    **self.params,
                     "window_start": window_start.isoformat(),
                     "window_end": window_end.isoformat(),
                     "skip": count,
                     "limit": limit
                 },
+                json={},
                 timeout=self.timeout,
             )
             try:
