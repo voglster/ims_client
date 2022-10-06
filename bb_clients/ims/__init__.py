@@ -273,10 +273,9 @@ class InventoryManagementSystem:
                 chunk = r.json()
                 if total == limit:
                     total = chunk.get("total", limit)
-                count += chunk.get("count", 0)
                 if chunk_data := chunk.get("data", []):
                     data.extend(chunk_data)
-                    count += limit
+                    count += chunk.get("count", 0)
                 else:
                     break
             except JSONDecodeError:
