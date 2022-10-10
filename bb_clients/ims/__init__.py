@@ -1,6 +1,7 @@
 from asyncio import sleep
 from datetime import datetime, timedelta
 from functools import lru_cache
+from http.client import HTTPException
 from json import JSONDecodeError
 from os import getenv
 from typing import Iterable, List, Union, Optional
@@ -249,13 +250,29 @@ class InventoryManagementSystem:
         return True
 
     @logger.catch(reraise=True)
-    def replication_data(self, window_start: datetime = None, limit: int = 5000):
+    def replication_data(self, window_start: datetime = None, limit: int = 1000, force: bool = False):
         if not window_start:
             window_start = datetime.utcnow() - timedelta(days=2)
         window_end = datetime.utcnow()
         data = []
         count = 0
-        total = limit
+        r = httpx.post(
+            f"{self.base_url}/logs/replication_count",
+            params={
+                **self.params,
+                "window_start": window_start.isoformat(),
+                "window_end": window_end.isoformat(),
+                "force": force
+            },
+            json={},
+            timeout=self.timeout,
+        )
+        if r.status_code != HTTP_200_OK:
+            raise HTTPException(422, f"Bad response from target IMS service: {r.status_code}")
+        try:
+            total = r.json().get("total", limit)
+        except JSONDecodeError:
+            raise HTTPException(500, f"Error reading response from target IMS service")
         while count < total:
             r = httpx.post(
                 f"{self.base_url}/logs/replication_data",
@@ -264,7 +281,8 @@ class InventoryManagementSystem:
                     "window_start": window_start.isoformat(),
                     "window_end": window_end.isoformat(),
                     "skip": count,
-                    "limit": limit
+                    "limit": limit,
+                    "force": force
                 },
                 json={},
                 timeout=self.timeout,
