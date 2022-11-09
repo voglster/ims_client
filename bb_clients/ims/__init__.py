@@ -250,55 +250,67 @@ class InventoryManagementSystem:
         return True
 
     @logger.catch(reraise=True)
-    def replication_data(self, window_start: datetime = None, limit: int = 1000, force: bool = False):
+    def replication_data(
+        self, window_start: datetime = None, limit: int = 1000, force: bool = False
+    ) -> Iterable:
         if not window_start:
             window_start = datetime.utcnow() - timedelta(days=2)
         window_end = datetime.utcnow()
-        data = []
         count = 0
-        r = httpx.post(
-            f"{self.base_url}/logs/replication_count",
-            params={
-                **self.params,
-                "window_start": window_start.isoformat(),
-                "window_end": window_end.isoformat(),
-                "force": force
-            },
-            json={},
-            timeout=self.timeout,
-        )
-        if r.status_code != HTTP_200_OK:
-            raise HTTPException(422, f"Bad response from target IMS service: {r.status_code}")
-        try:
-            total = r.json().get("total", limit)
-        except JSONDecodeError:
-            raise HTTPException(500, f"Error reading response from target IMS service")
+        total = self.get_replication_count(force, limit, window_end, window_start)
         while count < total:
-            r = httpx.post(
-                f"{self.base_url}/logs/replication_data",
-                params={
-                    **self.params,
-                    "window_start": window_start.isoformat(),
-                    "window_end": window_end.isoformat(),
-                    "skip": count,
-                    "limit": limit,
-                    "force": force
-                },
-                json={},
-                timeout=self.timeout,
+            r = self.get_replication_data_chunk(
+                count, force, limit, window_end, window_start
             )
             try:
                 chunk = r.json()
                 if total == limit:
                     total = chunk.get("total", limit)
                 if chunk_data := chunk.get("data", []):
-                    data.extend(chunk_data)
                     count += chunk.get("count", 0)
+                    yield chunk_data
                 else:
                     break
             except JSONDecodeError:
                 break
-        return data
+
+    def get_replication_data_chunk(self, count, force, limit, window_end, window_start):
+        r = httpx.post(
+            f"{self.base_url}/logs/replication_data",
+            params={
+                **self.params,
+                "window_start": window_start.isoformat(),
+                "window_end": window_end.isoformat(),
+                "skip": count,
+                "limit": limit,
+                "force": force,
+            },
+            json={},
+            timeout=self.timeout,
+        )
+        return r
+
+    def get_replication_count(self, force, limit, window_end, window_start) -> int:
+        r = httpx.post(
+            f"{self.base_url}/logs/replication_count",
+            params={
+                **self.params,
+                "window_start": window_start.isoformat(),
+                "window_end": window_end.isoformat(),
+                "force": force,
+            },
+            json={},
+            timeout=self.timeout,
+        )
+        if r.status_code != HTTP_200_OK:
+            raise HTTPException(
+                422, f"Bad response from target IMS service: {r.status_code}"
+            )
+        try:
+            total = r.json().get("total", limit)
+        except JSONDecodeError:
+            raise HTTPException(500, f"Error reading response from target IMS service")
+        return total
 
     def register_tank_monitor(self, req: RegisterTankMonitorRequest):
         logger.info(f"Sending to {self.base_url}/tank/register/create")
