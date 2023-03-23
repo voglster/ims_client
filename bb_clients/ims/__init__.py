@@ -113,6 +113,7 @@ class InventoryManagementSystem:
 
         def fix_store_to_site(row):
             row["site"] = row["store_number"]
+            return row
 
         return [NearestReading.parse_obj(fix_store_to_site(row)) for row in data]
 
