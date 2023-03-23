@@ -46,7 +46,7 @@ class RegisterTankMonitorRequest(BaseModel):
 
 
 class NearestReading(BaseModel):
-    store_number: str
+    site: str
     tank_id: str
     read_time: datetime  # UTC
     volume: float
@@ -110,7 +110,11 @@ class InventoryManagementSystem:
         )
         print(r.json())
         data = r.json() if r.status_code == 200 else []
-        return [NearestReading.parse_obj(row) for row in data]
+
+        def fix_store_to_site(row):
+            row["site"] = row["store_number"]
+
+        return [NearestReading.parse_obj(fix_store_to_site(row)) for row in data]
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
