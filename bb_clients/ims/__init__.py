@@ -45,6 +45,14 @@ class RegisterTankMonitorRequest(BaseModel):
     monitor_type: str
 
 
+class NearestReading(BaseModel):
+    store_number: str
+    tank_id: str
+    read_time: datetime  # UTC
+    volume: float
+    diff: int  # Milliseconds off of target date
+
+
 class InventoryManagementSystem:
     def __init__(self, base_url=None, system_psk=None, timeout=10):
         self.base_url = base_url or getenv("IMS_URL")
@@ -88,6 +96,21 @@ class InventoryManagementSystem:
             row["read_time"] = parse(row["read_time"])
             row["run_time"] = parse(row["run_time"])
         return data
+
+    @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    def nearest_readings(
+        self, store_numbers: list[str], date: datetime
+    ) -> list[NearestReading]:
+        r = httpx.post(
+            f"{self.base_url}/tank_inventory/nearest",
+            json=store_numbers,
+            params={"date": date.isoformat(), **self.params},
+            timeout=self.timeout,
+        )
+        print(r.json())
+        data = r.json() if r.status_code == 200 else []
+        return [NearestReading.parse_obj(row) for row in data]
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
