@@ -1,3 +1,4 @@
+import json
 from asyncio import sleep
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -11,6 +12,7 @@ import pytz
 from dateutil.parser import parse
 from loguru import logger
 from pydantic import BaseModel
+from pydantic.json import pydantic_encoder
 from starlette.status import HTTP_200_OK
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -29,13 +31,26 @@ class Tank(BaseModel):
     volume: float
 
 
+class BaseStoreTank(BaseModel):
+    store: str
+    tank: str
+
+    @property
+    def identity(self):
+        return f"{self.store}:{self.tank}"
+
+    def store_tank_query(self):
+        return {"store_number": self.store, "tank_id": self.tank}
+
+
 class Reading(BaseModel):
-    read_time: datetime
-    run_time: datetime
     store_number: str
     tank_id: str
+    run_time: datetime  # UTC
+    read_time: datetime  # UTC
     volume: float
-    temperature: float
+    product: str = None
+    temperature: float = 0
 
 
 class RegisterTankMonitorRequest(BaseModel):
@@ -108,7 +123,6 @@ class InventoryManagementSystem:
             params={"date": date.isoformat(), **self.params},
             timeout=self.timeout,
         )
-        print(r.json())
         data = r.json() if r.status_code == 200 else []
 
         def fix_store_to_site(row):
@@ -116,6 +130,19 @@ class InventoryManagementSystem:
             return row
 
         return [NearestReading.parse_obj(fix_store_to_site(row)) for row in data]
+
+    @logger.catch(reraise=True)
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
+    def latest_readings(self, store_tanks: Iterable[BaseStoreTank]) -> list[Reading]:
+        encoded = json.dumps([d.dict() for d in store_tanks], default=pydantic_encoder)
+        r = httpx.post(
+            f"{self.base_url}/tank_inventory/latest/many",
+            data=encoded,
+            params=self.params,
+            timeout=self.timeout,
+        )
+        data = r.json() if r.status_code == 200 else []
+        return [Reading.parse_obj(row) for row in data]
 
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
