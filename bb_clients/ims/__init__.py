@@ -115,12 +115,12 @@ class InventoryManagementSystem:
     @logger.catch(reraise=True)
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(5))
     def nearest_readings(
-        self, store_numbers: list[str], date: datetime
+        self, store_numbers: list[str], date: datetime, limit_ms: int | None = None
     ) -> list[NearestReading]:
         r = httpx.post(
             f"{self.base_url}/tank_inventory/nearest",
             json=store_numbers,
-            params={"date": date.isoformat(), **self.params},
+            params={"date": date.isoformat(), "limit_ms": limit_ms, **self.params},
             timeout=self.timeout,
         )
         data = r.json() if r.status_code == 200 else []
