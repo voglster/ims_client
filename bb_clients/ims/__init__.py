@@ -21,12 +21,12 @@ class Tank(BaseModel):
     id: str
     monitor_type: str
     payload: dict
-    product: Optional[str]
+    product: str | None = None
     sample_rate: int
     status: str
     store_number: str
     tank_id: str
-    temperature: Optional[float]
+    temperature: float | None = None
     updated: datetime
     volume: float
 
@@ -49,7 +49,7 @@ class Reading(BaseModel):
     run_time: datetime  # UTC
     read_time: datetime  # UTC
     volume: float
-    product: str = None
+    product: str | None = None
     temperature: float = 0
 
 
